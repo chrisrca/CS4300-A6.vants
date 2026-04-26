@@ -46,17 +46,26 @@ fn pheromoneIndex( vant_pos: vec2f ) -> u32 {
 fn cs(@builtin(global_invocation_id) cell:vec3u)  {
   let pi2   = ${Math.PI*2}; 
   var vant:Vant  = vants[ cell.x ];
+  let behavior = u32( vant.flag );
 
   let pIndex    = pheromoneIndex( vant.pos );
   let pheromone = pheremones[ pIndex ];
 
-  // if pheromones were found
-  if( pheromone != 0. ) {
-    vant.dir += select(.25,-.25,vant.flag==0.); // turn 90 degrees counter-clockwise
-    pheremones[ pIndex ] = 0.;  // set pheromone flag
-  }else{
-    vant.dir += select(-.25,.25,vant.flag==0.); // turn 90 degrees counter-clockwise
-    pheremones[ pIndex ] = 1.;  // unset pheromone flag
+  if( behavior == 0u ) {
+    // if pheromones were found
+    if( pheromone != 0. ) {
+      vant.dir += select(.25,-.25,vant.flag==0.); // turn 90 degrees counter-clockwise
+      pheremones[ pIndex ] = 0.;  // set pheromone flag
+    }else{
+      vant.dir += select(-.25,.25,vant.flag==0.); // turn 90 degrees counter-clockwise
+      pheremones[ pIndex ] = 1.;  // unset pheromone flag
+    }
+  } else if( behavior == 1u ) {
+
+  } else if( behavior == 2u ) {
+
+  } else {
+
   }
 
   // calculate direction based on vant heading
@@ -83,7 +92,7 @@ for( let i = 0; i < NUM_AGENTS * NUM_PROPERTIES; i+= NUM_PROPERTIES ) {
   vants[ i ]   = Math.floor( (offset+Math.random()*STARTING_AREA) * W ) // x
   vants[ i+1 ] = Math.floor( (offset+Math.random()*STARTING_AREA) * H ) // y
   vants[ i+2 ] = 0 // direction 
-  vants[ i+3 ] = Math.round( Math.random()  ) // vant behavior type 
+  vants[ i+3 ] = Math.floor( Math.random() * 4 ) // vant behavior type
 }
 
 const sg = await gulls.init()
