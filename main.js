@@ -40,6 +40,12 @@ fn pheromoneIndex( vant_pos: vec2f ) -> u32 {
   return u32( abs( vant_pos.y % ${H}. ) * width + vant_pos.x );
 }
 
+fn lookup( pos: vec2f, dx: i32, dy: i32 ) -> f32 {
+  let nx = ( ( i32(pos.x) + dx + ${W} ) % ${W} );
+  let ny = ( ( i32(pos.y) + dy + ${H} ) % ${H} );
+  return pheremones[ u32(ny) * ${W}u + u32(nx) ];
+}
+
 @compute
 @workgroup_size(${WORKGROUP_SIZE},1,1)
 
@@ -61,11 +67,31 @@ fn cs(@builtin(global_invocation_id) cell:vec3u)  {
       pheremones[ pIndex ] = 1.;  // unset pheromone flag
     }
   } else if( behavior == 1u ) {
-
+    let n = lookup(vant.pos,-1,-1) + lookup(vant.pos,0,-1) + lookup(vant.pos,1,-1)
+          + lookup(vant.pos,-1, 0) +                         lookup(vant.pos,1, 0)
+          + lookup(vant.pos,-1, 1) + lookup(vant.pos,0, 1) + lookup(vant.pos,1, 1);
+    if( n < 1. ) {
+      if( pheromone != 0. ) {
+        vant.dir -= .25;
+        pheremones[ pIndex ] = 0.;
+      } else {
+        vant.dir += .25;
+        pheremones[ pIndex ] = 1.;
+      }
+    } else {
+      pheremones[ pIndex ] = 0.;
+    }
   } else if( behavior == 2u ) {
-
-  } else {
-
+    let n = lookup(vant.pos,-1,-1) + lookup(vant.pos,0,-1) + lookup(vant.pos,1,-1)
+          + lookup(vant.pos,-1, 0) +                         lookup(vant.pos,1, 0)
+          + lookup(vant.pos,-1, 1) + lookup(vant.pos,0, 1) + lookup(vant.pos,1, 1);
+    if( pheromone != 0. ) {
+      vant.dir += n * .375;
+      pheremones[ pIndex ] = 0.;
+    } else {
+      vant.dir -= n * .375;
+      pheremones[ pIndex ] = 1.;
+    }
   }
 
   // calculate direction based on vant heading
@@ -92,7 +118,7 @@ for( let i = 0; i < NUM_AGENTS * NUM_PROPERTIES; i+= NUM_PROPERTIES ) {
   vants[ i ]   = Math.floor( (offset+Math.random()*STARTING_AREA) * W ) // x
   vants[ i+1 ] = Math.floor( (offset+Math.random()*STARTING_AREA) * H ) // y
   vants[ i+2 ] = 0 // direction 
-  vants[ i+3 ] = Math.floor( Math.random() * 4 ) // vant behavior type
+  vants[ i+3 ] = Math.floor( Math.random() * 3 ) // vant behavior type
 }
 
 const sg = await gulls.init()
